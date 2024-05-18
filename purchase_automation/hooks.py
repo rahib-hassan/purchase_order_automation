@@ -130,6 +130,12 @@ app_license = "mit"
 # 	}
 # }
 
+doc_events = {
+    "Sales Order": {
+        "on_submit": "purchase_automation.custom_script.sales_order.create_purchase_order"
+    }
+}
+
 # Scheduled Tasks
 # ---------------
 
