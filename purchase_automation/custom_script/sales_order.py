@@ -1,4 +1,5 @@
 import frappe
+from frappe.utils import add_days
 
 def create_purchase_order(doc, event):
 	sales_order_items = frappe.get_all(
@@ -35,3 +36,43 @@ def create_purchase_order(doc, event):
 
 		frappe.msgprint(f"Purchase Order created for Supplier {supplier}")
 
+
+
+@frappe.whitelist(allow_guest=True)
+def make_sales_order(**args):
+	so = frappe.new_doc("Sales Order")
+	args = frappe._dict(args)
+	if args.transaction_date:
+		so.transaction_date = args.transaction_date
+
+	so.set_warehouse = ""
+	so.company = args.company
+	so.customer = args.customer
+	so.currency = args.currency
+	if args.selling_price_list:
+		so.selling_price_list = args.selling_price_list
+
+	if args.item_list:
+		for item in args.item_list:
+			so.append("items", item)
+
+	else:
+		so.append(
+			"items",
+			{
+				"item_code": args.item or args.item_code,
+				"warehouse": args.warehouse,
+				"qty": args.qty or 10,
+				"uom": args.uom or None,
+				"price_list_rate": args.price_list_rate or None,
+				"discount_percentage": args.discount_percentage or None,
+				"rate": args.rate or (None if args.price_list_rate else 100),
+			},
+		)
+
+	so.delivery_date = add_days(so.transaction_date, 10)
+
+	so.save(ignore_permissions=True)
+	so.submit()
+
+	return so
